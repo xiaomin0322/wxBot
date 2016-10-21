@@ -17,6 +17,7 @@ import random
 from traceback import format_exc
 from requests.exceptions import ConnectionError, ReadTimeout
 import HTMLParser
+#from aifc import data
 
 UNKONWN = 'unkonwn'
 SUCCESS = '200'
@@ -814,8 +815,8 @@ class WXBot:
         if not os.path.exists(fpath):
             print '[ERROR] File not exists.'
             return None
-        url_1 = 'https://file.wx2.qq.com/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json'
-        url_2 = 'https://file2.wx2.qq.com/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json'
+        url_1 = 'https://file.wx.qq.com/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json'
+        url_2 = 'https://file.wx.qq.com/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json'
         flen = str(os.path.getsize(fpath))
         ftype = mimetypes.guess_type(fpath)[0] or 'application/octet-stream'
         files = {
@@ -840,6 +841,21 @@ class WXBot:
         self.file_index += 1
         try:
             r = self.session.post(url_1, files=files)
+            if json.loads(r.text)['BaseResponse']['Ret'] != 0:
+                # 当file返回值不为0时则为上传失败，尝试第二服务器上传
+                r = self.session.post(url_2, files=files)
+            if json.loads(r.text)['BaseResponse']['Ret'] != 0:
+                # 当file返回值不为0时则为上传失败，尝试第二服务器上传
+                r = self.session.post(url_2, files=files)
+            if json.loads(r.text)['BaseResponse']['Ret'] != 0:
+                # 当file返回值不为0时则为上传失败，尝试第二服务器上传
+                r = self.session.post(url_2, files=files)
+            if json.loads(r.text)['BaseResponse']['Ret'] != 0:
+                # 当file返回值不为0时则为上传失败，尝试第二服务器上传
+                r = self.session.post(url_2, files=files)
+            if json.loads(r.text)['BaseResponse']['Ret'] != 0:
+                # 当file返回值不为0时则为上传失败，尝试第二服务器上传
+                r = self.session.post(url_2, files=files)
             if json.loads(r.text)['BaseResponse']['Ret'] != 0:
                 # 当file返回值不为0时则为上传失败，尝试第二服务器上传
                 r = self.session.post(url_2, files=files)
@@ -878,9 +894,14 @@ class WXBot:
 
     def send_img_msg_by_uid(self, fpath, uid):
         mid = self.upload_media(fpath, is_img=True)
+        print 'mid==='+mid
+        
         if mid is None:
             return False
-        url = self.base_uri + '/webwxsendmsgimg?fun=async&f=json'
+        
+        print 'start send_img_msg_by_uid'
+        
+        url = self.base_uri + '/webwxsendmsgimg?fun=async&f=json&lang=zh_CN'
         data = {
                 'BaseRequest': self.base_request,
                 'Msg': {
@@ -895,13 +916,19 @@ class WXBot:
             data['Msg']['Type'] = 47
             data['Msg']['EmojiFlag'] = 2
         try:
+            print 'url===='+url
+            print 'data==='+bytes(data)
+            
             r = self.session.post(url, data=json.dumps(data))
             res = json.loads(r.text)
+            print 'res ====='+bytes(res)
             if res['BaseResponse']['Ret'] == 0:
+                print 'sendImgMes true >>>>>>>>>>>>>>>>>>>'
                 return True
             else:
                 return False
         except Exception,e:
+            print e ;
             return False
 
     def get_user_id(self, name):
