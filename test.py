@@ -16,7 +16,9 @@ class MyWXBot(WXBot):
         
         print  'userid ' + userid
         self.send_msg(u'小蝌蚪', u'测试')
-        self.send_img_msg_by_uid("img/1.png", userid)
+        #self.send_img_msg_by_uid("img/1.png", userid)
+        self.send_img_msg_by_uid("e:/test.png", userid)
+        
         time.sleep(20)
 
 
