@@ -118,8 +118,11 @@ class WXBot:
             raise Exception('Unknown Type')
 
     def get_contact(self):
+        
+        print 'get_contact start >>>>>>>>>>>>>>>>>>>>>>>'
+        
         """获取当前账户的所有相关账号(包括联系人、公众号、群聊、特殊账号)"""
-        url = self.base_uri + '/webwxgetcontact?pass_ticket=%s&skey=%s&r=%s' \
+        url = self.base_uri + '/webwxgetcontact?lang=zh_CN&seq=0&pass_ticket=%s&skey=%s&r=%s' \
                               % (self.pass_ticket, self.skey, int(time.time()))
         r = self.session.post(url, data='{}')
         r.encoding = 'utf-8'
@@ -144,6 +147,8 @@ class WXBot:
         self.group_list = []
 
         for contact in self.member_list:
+           
+            
             if contact['VerifyFlag'] & 8 != 0:  # 公众号
                 self.public_list.append(contact)
                 self.account_info['normal_member'][contact['UserName']] = {'type': 'public', 'info': contact}
@@ -151,6 +156,8 @@ class WXBot:
                 self.special_list.append(contact)
                 self.account_info['normal_member'][contact['UserName']] = {'type': 'special', 'info': contact}
             elif contact['UserName'].find('@@') != -1:  # 群聊
+                print 'contect >>>>>>>>>>'+bytes(contact)
+                 
                 self.group_list.append(contact)
                 self.account_info['normal_member'][contact['UserName']] = {'type': 'group', 'info': contact}
             elif contact['UserName'] == self.my_account['UserName']:  # 自己
@@ -186,7 +193,7 @@ class WXBot:
 
     def batch_get_group_members(self):
         """批量获取所有群聊成员信息"""
-        url = self.base_uri + '/webwxbatchgetcontact?type=ex&r=%s&pass_ticket=%s' % (int(time.time()), self.pass_ticket)
+        url = self.base_uri + '/webwxbatchgetcontact?type=ex&lang=zh_CN&r=%s&pass_ticket=%s' % (int(time.time()), self.pass_ticket)
         params = {
             'BaseRequest': self.base_request,
             "Count": len(self.group_list),
@@ -195,15 +202,40 @@ class WXBot:
         r = self.session.post(url, data=json.dumps(params))
         r.encoding = 'utf-8'
         dic = json.loads(r.text)
+        
+        print 'batch_get_group_members dic :'+bytes(dic)
+        
         group_members = {}
         encry_chat_room_id = {}
         for group in dic['ContactList']:
+            print 'group :'+bytes(group)
+            self.group_list.append(group)
             gid = group['UserName']
             members = group['MemberList']
             group_members[gid] = members
             encry_chat_room_id[gid] = group['EncryChatRoomId']
         self.group_members = group_members
         self.encry_chat_room_id_list = encry_chat_room_id
+      
+    """
+                   根据群名称获取群id
+    """    
+    def geGroupIdByGroupName(self,groupName):
+        for group in self.group_list:
+           if groupName == group['NickName']:
+               return group['UserName']
+    
+           
+           
+    """
+                   根据群名称获取群id
+    """    
+    def geGroupNameByGroupId(self,groupId):
+        for group in self.group_list:
+           if groupId == group['UserName']:
+               return group['NickName']       
+
+
 
     def get_group_member_name(self, gid, uid):
         """
@@ -942,6 +974,8 @@ class WXBot:
                 return contact['UserName']
             elif 'DisplayName' in contact and contact['DisplayName'] == name:
                 return contact['UserName']
+        
+        
         for group in self.group_list:
             if 'RemarkName' in group and group['RemarkName'] == name:
                 return group['UserName']
@@ -1012,7 +1046,7 @@ class WXBot:
             print '[INFO] Web WeChat init failed'
             return
         self.status_notify()
-        self.get_contact()
+        #self.get_contact()
         print '[INFO] Get %d contacts' % len(self.contact_list)
         print '[INFO] Start to process messages .'
         self.proc_msg()
@@ -1143,6 +1177,72 @@ class WXBot:
         self.my_account = dic['User']
         self.sync_key_str = '|'.join([str(keyVal['Key']) + '_' + str(keyVal['Val'])
                                       for keyVal in self.sync_key['List']])
+        
+        
+        if self.DEBUG:
+            with open(os.path.join(self.temp_pwd,'contacts.json'), 'w') as f:
+                f.write(r.text.encode('utf-8'))
+        dic = json.loads(r.text)
+        self.member_list = dic['ContactList']
+
+        special_users = ['newsapp', 'fmessage', 'filehelper', 'weibo', 'qqmail',
+                         'fmessage', 'tmessage', 'qmessage', 'qqsync', 'floatbottle',
+                         'lbsapp', 'shakeapp', 'medianote', 'qqfriend', 'readerapp',
+                         'blogapp', 'facebookapp', 'masssendapp', 'meishiapp',
+                         'feedsapp', 'voip', 'blogappweixin', 'weixin', 'brandsessionholder',
+                         'weixinreminder', 'wxid_novlwrv3lqwv11', 'gh_22b87fa7cb3c',
+                         'officialaccounts', 'notification_messages', 'wxid_novlwrv3lqwv11',
+                         'gh_22b87fa7cb3c', 'wxitil', 'userexperience_alarm', 'notification_messages']
+
+        self.contact_list = []
+        self.public_list = []
+        self.special_list = []
+        self.group_list = []
+
+        for contact in self.member_list:
+           
+            
+            if contact['VerifyFlag'] & 8 != 0:  # 公众号
+                self.public_list.append(contact)
+                self.account_info['normal_member'][contact['UserName']] = {'type': 'public', 'info': contact}
+            elif contact['UserName'] in special_users:  # 特殊账户
+                self.special_list.append(contact)
+                self.account_info['normal_member'][contact['UserName']] = {'type': 'special', 'info': contact}
+            elif contact['UserName'].find('@@') != -1:  # 群聊
+                print 'contect >>>>>>>>>>'+bytes(contact)
+                 
+                self.group_list.append(contact)
+                self.account_info['normal_member'][contact['UserName']] = {'type': 'group', 'info': contact}
+            elif contact['UserName'] == self.my_account['UserName']:  # 自己
+                self.account_info['normal_member'][contact['UserName']] = {'type': 'self', 'info': contact}
+            else:
+                self.contact_list.append(contact)
+                self.account_info['normal_member'][contact['UserName']] = {'type': 'contact', 'info': contact}
+
+        self.batch_get_group_members()
+
+        for group in self.group_members:
+            for member in self.group_members[group]:
+                if member['UserName'] not in self.account_info:
+                    self.account_info['group_member'][member['UserName']] = \
+                        {'type': 'group_member', 'info': member, 'group': group}
+
+        if self.DEBUG:
+            with open(os.path.join(self.temp_pwd,'contact_list.json'), 'w') as f:
+                f.write(json.dumps(self.contact_list))
+            with open(os.path.join(self.temp_pwd,'special_list.json'), 'w') as f:
+                f.write(json.dumps(self.special_list))
+            with open(os.path.join(self.temp_pwd,'group_list.json'), 'w') as f:
+                f.write(json.dumps(self.group_list))
+            with open(os.path.join(self.temp_pwd,'public_list.json'), 'w') as f:
+                f.write(json.dumps(self.public_list))
+            with open(os.path.join(self.temp_pwd,'member_list.json'), 'w') as f:
+                f.write(json.dumps(self.member_list))
+            with open(os.path.join(self.temp_pwd,'group_users.json'), 'w') as f:
+                f.write(json.dumps(self.group_members))
+            with open(os.path.join(self.temp_pwd,'account_info.json'), 'w') as f:
+                f.write(json.dumps(self.account_info))
+        
         return dic['BaseResponse']['Ret'] == 0
 
     def status_notify(self):
