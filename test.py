@@ -30,9 +30,11 @@ class MyWXBot(WXBot):
             if rd > 18:
                 print '发送消息了'
                 time.sleep(2) 
-                self.send_msg_by_uid('毛哥，你屎坐了吗 ？ 呼叫毛哥！！！！毛哥是否尚在????????',userid)
+                self.send_msg_by_uid('毛哥，你屎坐了吗 ？ 呼叫毛哥！！！！毛哥什么时候回来？？？'+bytes(rd),userid)
                 time.sleep(2)
-                self.send_img_msg_by_uid("img/login_on_ubuntu.png", userid)
+                imgindex = random.randint(1, 9)
+            
+                self.send_img_msg_by_uid("img/"+bytes(imgindex)+".jpg", userid)
                
                 
                 #self.send_msg(u'小蝌蚪', u'测试')
