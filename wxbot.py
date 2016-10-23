@@ -656,7 +656,8 @@ class WXBot:
                     elif selector == '4':  # 通讯录更新
                         r = self.sync()
                         if r is not None:
-                            self.get_contact()
+                             self.init()
+                             #self.get_contact()
                     elif selector == '6':  # 可能是红包
                         r = self.sync()
                         if r is not None:
